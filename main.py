@@ -17,6 +17,7 @@ np.set_printoptions(precision=2)
 import openface
 import pickle
 import sys
+import pandas as pd
 
 fileDir = os.path.dirname(os.path.realpath(__file__))
 modelDir = os.path.join(fileDir, 'models')
@@ -89,24 +90,36 @@ def getRep(imgPath):
 
 
 fName = "./rep.pkl"
+fName2 = "./rep.csv"
 if os.path.isfile(fName):
     print("Loading mean representation from '{}'".format(fName))
     with open(fName, 'r') as f:
         (repMean, repMedian) = pickle.load(f)
+    with open(fName2, 'r') as f:
+        repAll = pd.read_csv(fName2, header=None).as_matrix()
+        print repAll.shape
 else:
     # iter through images in input dir, get representations, calculate mean/median
     repList = list()
-    imgs = list(iterImgs(args.targetDir))
+    imgs = list(iterImgs(args.targetDir))[0:10]
     for imgObject in imgs:
         print("=== {} ===".format(imgObject.path))
-        imgRep = getRep(imgObject.path)
-        repList.append(imgRep)
-    
+        try:
+            imgRep = getRep(imgObject.path)
+            repList.append(imgRep)
+        except Exception as exc:
+            print exc
+
+
     repAll = np.vstack(repList)
     print "=== representations:"
     print repAll.shape
     repMean   = np.mean(repAll, axis=0)
     repMedian = np.median(repAll, axis=0)
+
+    # store embeddings in a csv file
+    with open(fName2, 'w') as f:
+        pd.DataFrame(repAll).to_csv(f, header=False, index=False)
     
     # store in a pickle file
     print("Saving mean representation to '{}'".format(fName))
@@ -126,6 +139,10 @@ for imgtest in args.imgTest:
         dmean   = repMean   - imgRep
         dmedian = repMedian - imgRep
         print("Squared l2 distance between mean   representation and test image ({}): {:0.3f}".format(imgtest, np.dot(dmean, dmean)))
-        print("Squared l2 distance between median representation and test image ({}): {:0.3f}\n".format(imgtest, np.dot(dmedian, dmedian)))
+        print("Squared l2 distance between median representation and test image ({}): {:0.3f}".format(imgtest, np.dot(dmedian, dmedian)))
 
+        # distance to each training image
+        distAll = repAll - imgRep
+        distAll = np.sum(distAll * distAll, axis=1)
+        print("distance to each training image: {}".format(distAll))
 
