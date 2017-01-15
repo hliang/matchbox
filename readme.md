@@ -13,7 +13,9 @@ This tool tries to detect whether the test images are from the same person as th
 ## usage
 Tested in docker container (bamos/openface).
 example:
-`python main.py --verbose  --targetDir /path/to/rawimg/Yifei_Liu/ /path/to/rawimg/Wei_Zhao/006-vi.jpg /path/to/rawimg/Wei_Zhao/007-vi.jpg | tee zhaowei-liuyifei.log`
+```
+python main.py --verbose  --targetDir /path/to/rawimg/Yifei_Liu/ /path/to/rawimg/Wei_Zhao/006-vi.jpg /path/to/rawimg/Wei_Zhao/007-vi.jpg | tee zhaowei-liuyifei.log
+```
 
 ## TODO:
 improve distance estimation: instead of comparing test image with mean representaions, try to compare the test image with each training image, then check how many (80%-90%) of them pass a certain threshold.
