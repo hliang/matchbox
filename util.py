@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-  
 
 import sys
 import os
@@ -51,23 +52,25 @@ def getHtmlContent(url):
     """
     use requests to get content
     """
+    ## TODO: use the same user agent for related url, that makes it more like real-world browsing
     if url.startswith("javascript:"):
         rootLogger.debug("skip javascript: %s" %(url))
         return None
-    try:
-        r = requests.get(url, headers={'User-Agent':random.choice(agents)})
-    except requests.exceptions.InvalidSchema as e:
-        rootLogger.error("InvalidSchema: %s" % (e) )
-        raise e
-    except Exception as e:
-        rootLogger.exception("Unexpected error: %s" % (e) )
-        raise e
-    if r.status_code == requests.codes.ok :
-        return r.content
-    else:
-        rootLogger.warn("return code not ok: %s" % (r.status_code) )
-        #r.raise_for_status()
-        return None
+    for _ in range(3):  # retry if status_code is not ok
+        try:
+            r = requests.get(url, headers={'User-Agent':random.choice(agents)})
+        except requests.exceptions.InvalidSchema as e:
+            rootLogger.error("InvalidSchema: %s" % (e) )
+            raise e
+        except Exception as e:
+            rootLogger.exception("Unexpected error: %s" % (e) )
+            raise e
+        if r.status_code == requests.codes.ok :
+            return r.content
+        time.sleep(5) # wait
+    rootLogger.warn("return code (%s) not ok for: %s" % (r.status_code, url) )
+    #r.raise_for_status()
+    return None
 
 def getSoup(url):
     """
@@ -90,7 +93,7 @@ def getPostImgUrls(url):
     if x_soup is None:
         return {'url': url}
     x_title = ''.join(x_soup.title.text.splitlines())
-    rootLogger.info("%s %s" % (url, x_title) )
+    rootLogger.info("got soup from: %s %s" % (url, x_title) )
 
     ## the following is for ent.news.cn as of July 2017. modifications might be needed for parsing other websites
     x_detail = x_soup.find(attrs={"id": "p-detail"})
@@ -109,13 +112,14 @@ def getPostImgUrls(url):
     #imgurls = [urljoin(url, tag['src']) for tag in imgtags] # full url
 
     # if x_detail.find(attrs={"class": "nextpage"}, text=u'\u4e0b\u4e00\u9875') is not None:
-    x_nextpage_tags = x_detail.find_all('a', text=u'\u4e0b\u4e00\u9875')
+    #x_nextpage_tags = x_detail.find_all('a', text=u'\u4e0b\u4e00\u9875')
+    x_nextpage_tags = x_detail.find_all('a', text=u'下一页') # 下一页
     if x_nextpage_tags:  # if not empty
         next_url = x_nextpage_tags[0]['href']  # use only first link
         next_url = urljoin(url, next_url)
+        time.sleep(1)
         next_res = getPostImgUrls(next_url)
         imgurls = imgurls + next_res['imgurls']
-        time.sleep(1)
 
     return {'url': url, 'title': x_title, 'text': x_text, 'imgurls': imgurls }
 
@@ -131,7 +135,7 @@ def url_to_bgrImg_old(url):
         bgrImg = cv2.imdecode(image, cv2.IMREAD_COLOR)
         return bgrImg
     else:
-        print "return code not ok: %s" % (r.status_code)
+        rootLogger.error("return code not ok: %s" % (r.status_code) )
         return None
 
 def url_to_bgrImg(url):
@@ -174,6 +178,7 @@ class webFace:
         please note, the rep returned from openface is numpy array, but is converted into list
         returns a list of all face reps
         """
+        start = time.time()
         bgrImg = bgrImg
         rgbImg = cv2.cvtColor(bgrImg, cv2.COLOR_BGR2RGB)
         #print("  + Original size: {}".format(rgbImg.shape))
@@ -183,21 +188,22 @@ class webFace:
         else:
             bb1 = self.align.getLargestFaceBoundingBox(rgbImg)
             bbs = [bb1]
-        print("  + found {} faces".format(len(bbs)))
     
         reps = []
         for bb in bbs:
+            ## skip small faces. TODO: use size of specific landmarks (distance of two eyes, or distance from eye to nose), instead of box area. 
             if bb.area() < bboxArea:
-                print "  + skip small face:", bb.center(), bb.width(), bb.height(), bb.area()
+                rootLogger.debug("  + small face at %s, width x height: %d x %d, area: %d" % (bb.center(), bb.width(), bb.height(), bb.area()) )
                 continue
-            print "  + got big face:", bb.center(), bb.width(), bb.height(), bb.area()
+            rootLogger.debug("  + big face at %s, width x height: %d x %d, area: %d" % (bb.center(), bb.width(), bb.height(), bb.area()) )
             alignedFace = self.align.align(imgDim=self.imgDimResize, rgbImg=rgbImg, bb=bb,
                                       landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
             if alignedFace is None:
                 raise Exception("Unable to align image: {}".format("url"))
     
             rep = self.net.forward(alignedFace)
-            #reps.append(rep.tolist())
-            reps.append(rep.tolist()[0:5]) # for testing purpose, keep only the first few numbers
+            reps.append(rep.tolist())
+            #reps.append(rep.tolist()[0:3]) # for testing purpose, keep only the first few numbers
+        rootLogger.debug("+ %d faces, processed in %.2f seconds" % (len(bbs), time.time() - start) )
         return reps
 
