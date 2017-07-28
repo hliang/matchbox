@@ -67,6 +67,7 @@ def getHtmlContent(url):
             raise e
         if r.status_code == requests.codes.ok :
             return r.content
+        rootLogger.warn("attemp failed, will retry")
         time.sleep(5) # wait
     rootLogger.warn("return code (%s) not ok for: %s" % (r.status_code, url) )
     #r.raise_for_status()
@@ -207,3 +208,17 @@ class webFace:
         rootLogger.debug("+ %d faces, processed in %.2f seconds" % (len(bbs), time.time() - start) )
         return reps
 
+
+def calDist(q_arr, s_arr):
+    """
+    calculate distances of q_arr (1D array) to each item (with the same shape as q_arr) in s_arr
+    q_arr = np.array([1, 1, 1])
+    s_arr = np.array([[0, 0, 0], [1, 1, 0]]) # or np.array([0, 0, 0])
+    """
+    if len(s_arr.shape) == 1:
+        dist = np.linalg.norm(q_arr - s_arr, axis=0)
+    elif len(s_arr.shape) == 2:
+        dist = np.linalg.norm(q_arr - s_arr, axis=1)
+    else:
+        raise Exception("need 1D or 2D array. but received s_array with unexpected shape: %s" %(s_arr.shape,))
+    return dist
