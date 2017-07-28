@@ -61,8 +61,10 @@ for x_i, x_link in enumerate(all_a_tags):  # crawl all linked pages (posts)
         for imgurl in x_ret['imgurls']:
             imgurl = urljoin(x_ret['url'], imgurl)
             bgrImg = url_to_bgrImg(imgurl)
+            if bgrImg is None:
+                raise Exception("getPostImgUrls() returns None from %s %s" % (imgurl, x_ret['url']))
             imgReps = mywf.getRepsFromImg(bgrImg)
-            x_ret['reps'].append(imgReps[0:3])
+            x_ret['reps'].append(imgReps)
             # time.sleep(1)
         rootLogger.info("process %d img urls in %.2f seconds" % (len(x_ret['imgurls']), time.time() - start) )
 
