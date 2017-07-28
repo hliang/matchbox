@@ -38,7 +38,10 @@ topN_dist = []
 client = MongoClient("172.17.0.1", 27017)
 db = client['webface']['post2'] # dabatase--collection
 
-cursor = db.find({})
+rootLogger.info("########### starting search ##############")
+starttime = time.time()
+# cursor = db.find({})
+cursor = db.find({'imgurls.0':{'$exists':True}}) # has at least one image
 for web in cursor:
     web_imgurls = []
     web_facereps = []
@@ -71,6 +74,7 @@ for web in cursor:
         rootLogger.debug("updated topN imgurl: %s" % (repr(topN_imgurl).decode("unicode-escape")))
         rootLogger.debug("-----")
 
+rootLogger.info("search finished in %.3f seconds" % (time.time() - starttime))
 ## print the final result
 rootLogger.info("########### final top %d face ##############" % (topN))
 rootLogger.info("query image: %s" % (q_imgurl))
