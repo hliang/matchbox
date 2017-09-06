@@ -192,7 +192,7 @@ class webFace:
     
         reps = []
         for bb in bbs:
-            ## skip small faces. TODO: use size of specific landmarks (distance of two eyes, or distance from eye to nose), instead of box area. 
+            ## skip small faces. TODO: use size of specific landmarks (distance between two eyes, or distance from eye to nose), instead of box area. 
             if bb.area() < bboxArea:
                 rootLogger.debug("  + small face at %s, width x height: %d x %d, area: %d" % (bb.center(), bb.width(), bb.height(), bb.area()) )
                 continue

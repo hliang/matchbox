@@ -24,7 +24,7 @@ rootLogger.addHandler(consoleHandler)
 mywf = webFace()
 
 ## create connection and access specific database
-client = MongoClient("172.19.0.1", 27017)
+client = MongoClient("172.17.0.1", 27017)
 db = client['webface']['post2'] # dabatase/collection
 
 if len(sys.argv) > 1 and sys.argv[1].startswith("http"):
@@ -62,7 +62,9 @@ for x_i, x_link in enumerate(all_a_tags):  # crawl all linked pages (posts)
             imgurl = urljoin(x_ret['url'], imgurl)
             bgrImg = url_to_bgrImg(imgurl)
             if bgrImg is None:
-                raise Exception("getPostImgUrls() returns None from %s %s" % (imgurl, x_ret['url']))
+                rootLogger.exception("getPostImgUrls() returns None from %s %s" % (imgurl, x_ret['url']))
+                x_ret['reps'].append([])
+                continue
             imgReps = mywf.getRepsFromImg(bgrImg)
             x_ret['reps'].append(imgReps)
             # time.sleep(1)
