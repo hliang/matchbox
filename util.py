@@ -3,6 +3,7 @@
 
 import sys
 import os
+import re
 import time
 import random
 import logging
@@ -121,6 +122,39 @@ def getPostImgUrls(url):
         time.sleep(1)
         next_res = getPostImgUrls(next_url)
         imgurls = imgurls + next_res['imgurls']
+
+    return {'url': url, 'title': x_title, 'text': x_text, 'imgurls': imgurls }
+
+def getPostImgUrls_mmjpg(url):
+    """
+    retrieve these info:
+      title
+      text content, only first 100 char
+      image urls
+    """
+    x_soup = getSoup(url)
+    if x_soup is None:
+        return {'url': url}
+    x_title = ''.join(x_soup.title.text.splitlines())
+    rootLogger.info("got soup from: %s %s" % (url, x_title) )
+
+    ## the following is for mmjpg.com as of October 2017
+    x_info = x_soup.find(attrs={"class": "info"})
+    if x_info is None:
+        return {'url': url}
+    x_info = [s.text.encode("utf-8") for s in x_info.find_all("i")]
+
+    x_keywords = x_soup.find(attrs={"class": "tags"})
+    x_keywords = [s.text.encode("utf-8") for s in x_keywords.find_all("a")]
+
+    x_text = ' '.join(x_info + ["tag:"] + x_keywords)
+
+    picinfo = x_soup.find(attrs={"type": "text/javascript"}, text=re.compile('var picinfo.*'))
+    picinfo = re.search(r'picinfo\s+=\s+\[(\d+),(\d+),(\d+)\]', picinfo.text).groups()
+    picinfo = [int(s) for s in picinfo]
+    imgurls = []
+    for p in range(picinfo[2]):
+        imgurls.append("http://img.mmjpg.com/%d/%d/%d.jpg" % (picinfo[0], picinfo[1], (p + 1)))
 
     return {'url': url, 'title': x_title, 'text': x_text, 'imgurls': imgurls }
 
