@@ -38,15 +38,15 @@ def nestedCrawler(url, url_done):
     soup = getSoup(url)
     soup = soup.find(attrs={"class": "pic"}) # discard the naviagtion bar. change if needed
     all_a_tags = soup.find_all('a')  # find all links
+    rootLogger.info("about to crawl %s links in %s" %(len(all_a_tags), url))
     
-    rootLogger.debug("url_done11: %s" % (url_done.keys()))
-    rootLogger.debug("all_a_tags in (%s): %s" % (url, [x['href'] for x in all_a_tags])) # TODO not printed, fix it
+    #rootLogger.debug("url_done11: %s" % (url_done.keys()))
+    #rootLogger.debug("all_a_tags in (%s): %s" % (url, [x['href'] for x in all_a_tags]))
     for x_i, x_link in enumerate(all_a_tags):  # crawl all linked pages (posts)
         x_url = urljoin(url, x_link['href'])
-        rootLogger.debug("No.%s url: %s" % (x_i, x_url))
         #continue
         #x_url = "http://www.mmjpg.com/mm/241"
-        ## skip if x_url has been crawled in this run
+        ## skip if x_url has been crawled in this run session
         if x_url in url_done:
             continue
         ## skip if x_url has been crawled and stored in db
@@ -54,6 +54,7 @@ def nestedCrawler(url, url_done):
             rootLogger.debug("skip url already in db: %s" % (x_url) )
             url_done[x_url] = 1
             continue
+        rootLogger.debug("No.%s url: %s" % (x_i, x_url))
     
         ## extract image urls from the webpage
         try:
@@ -86,8 +87,7 @@ def nestedCrawler(url, url_done):
         db.update({'url':x_url}, {"$set":x_ret}, upsert=True, multi=False) # update (upsert) database
         time.sleep(2)  # take a break and avoid getting banned
     
-    rootLogger.info("crawled %s links" %(len(all_a_tags)))
     url_done[x_url] = 1
-    rootLogger.debug("nestedCrawler done with url_done: %s" % (url_done))
 
 nestedCrawler(url, url_done)
+rootLogger.debug("nestedCrawler done with url_done: %s" % (len(url_done)))
