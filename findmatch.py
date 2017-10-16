@@ -25,6 +25,8 @@ rootLogger.addHandler(consoleHandler)
 mywf = webFace()
 q_imgurl = "http://img4.duitang.com/uploads/item/201507/28/20150728133323_HfVnr.jpeg" # yangmi
 q_imgurl = 'http://imgbdb3.bendibao.com/bjbdb/20157/30/2015730235720677.jpg'  # wujing 吴京
+if len(sys.argv) > 1 and sys.argv[1].startswith("http"):
+    q_imgurl = sys.argv[1]
 q_bgrImg = url_to_bgrImg(q_imgurl)
 q_facerep = mywf.getRepsFromImg(q_bgrImg, multiple=False)[0]
 rootLogger.info("query image url: %s" % (q_imgurl))
@@ -37,6 +39,7 @@ topN_dist = []
 ## create connection and access specific database
 client = MongoClient("172.17.0.1", 27017)
 db = client['webface']['post2'] # dabatase--collection
+#db = client['webface']['mmjpg'] # dabatase--collection
 
 rootLogger.info("########### starting search ##############")
 starttime = time.time()
