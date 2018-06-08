@@ -60,7 +60,7 @@ def nestedCrawler(url, url_done):
         try:
             x_ret = getPostImgUrls_mmjpg(x_url)
         except Exception as e:
-            rootLogger.exception("fail to getPostImgUrls() for %s-th url: %s" %(x_i, x_url))
+            rootLogger.debug("failed to getPostImgUrls() for %s-th url: %s, but will crawl links in it" %(x_i, x_url))
             url_done[x_url] = 1
             nestedCrawler(x_url, url_done)
             continue
